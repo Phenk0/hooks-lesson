@@ -14,7 +14,7 @@ const StarRating = ({
   maxRating = 5,
   color = "#fcc419",
   size = 48,
-  clasName = "",
+  className = "",
   messages = [],
   defaultRating = 0,
   onSetRating,
@@ -33,7 +33,7 @@ const StarRating = ({
   };
 
   return (
-    <div style={containerStyle} className={clasName}>
+    <div style={containerStyle} className={className}>
       <div style={starContainerStyle}>
         {Array.from({ length: maxRating }, (_, i) => (
           <Star
