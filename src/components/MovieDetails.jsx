@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
-import { OMDBAPI_KEY } from "../App";
+import { useEffect, useRef, useState } from "react";
+import { useKey } from "../hooks/useKey";
+
 import Loader from "./UI/Loader";
 import ErrorMessage from "./UI/ErrorMessage";
 import StarRating from "./UI/StarRating";
+import { useDetails } from "../hooks/useDetails";
 
 const MovieDetails = ({
   selectedId,
@@ -10,10 +12,15 @@ const MovieDetails = ({
   onAddWatched,
   currentRating,
 }) => {
-  const [movieInfo, setMovieInfo] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [userRating, setUserRating] = useState(0);
+
+  const countRef = useRef(0);
+
+  const { movieInfo, isLoading, error } = useDetails(selectedId, setUserRating);
+  useEffect(() => {
+    if (userRating) countRef.current += 1;
+  }, [userRating]);
+
   const {
     title,
     plot,
@@ -40,61 +47,13 @@ const MovieDetails = ({
       runtime: parseFloat(runtime) || 0,
       imdbRating: Number(imdbRating) || 0,
       userRating,
+      countRatingDecisions: countRef.current,
     };
     onAddWatched(newWatchedMovie);
     onCloseDetails();
   };
-  useEffect(() => {
-    const fetchMovieDetails = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(
-          `http://www.omdbapi.com/?apikey=${OMDBAPI_KEY}&i=${selectedId}&type=movie`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch movie details");
-        }
-        const data = await response.json();
-        if (data.Error) {
-          throw new Error(data.Error);
-        }
-        const {
-          Title,
-          Plot,
-          Poster,
-          Runtime,
-          imdbRating,
-          Released,
-          Actors,
-          Director,
-          Genre,
-        } = data;
 
-        const modifiedMovieInfo = {
-          title: Title,
-          plot: Plot,
-          poster: Poster,
-          runtime: Runtime,
-          imdbRating,
-          released: Released,
-          actors: Actors,
-          director: Director,
-          genre: Genre,
-        };
-        setMovieInfo(modifiedMovieInfo);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchMovieDetails();
-    return () => {
-      setMovieInfo({});
-      setError("");
-      setUserRating(0);
-    };
-  }, [selectedId]);
+  useKey("Escape", onCloseDetails);
 
   useEffect(() => {
     if (!title) return;
@@ -103,18 +62,6 @@ const MovieDetails = ({
       document.title = "usePopcorn";
     };
   }, [title]);
-
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.code === "Escape") onCloseDetails();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onCloseDetails]);
 
   return (
     <div className="details">
